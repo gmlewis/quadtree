@@ -4,8 +4,6 @@ import (
 	"container/list"
 	"math"
 	"time"
-
-	_ "go.uber.org/zap"
 )
 
 var (
