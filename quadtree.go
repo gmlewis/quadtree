@@ -11,25 +11,25 @@ var (
 )
 
 type PhysicalObject interface {
-	GetX() float32             // X dimension of top left corner
-	GetY() float32             // Y dimension of top left corner
-	GetWidth() float32         // width of the object
-	GetHeight() float32        // height of the object
+	X() float64                // X dimension of top left corner
+	Y() float64                // Y dimension of top left corner
+	Width() float64            // width of the object
+	Height() float64           // height of the object
 	Update(time.Duration) bool // update positions of moving object
 }
 
-func Distance(one, another PhysicalObject) float32 {
-	if one.GetX() == another.GetX() {
-		return float32(math.Abs(float64(one.GetY() - another.GetY())))
-	} else if one.GetY() == another.GetY() {
-		return float32(math.Abs(float64(one.GetX() - another.GetX())))
+func Distance(one, another PhysicalObject) float64 {
+	if one.X() == another.X() {
+		return float64(math.Abs(float64(one.Y() - another.Y())))
+	} else if one.Y() == another.Y() {
+		return float64(math.Abs(float64(one.X() - another.X())))
 	} else {
-		return float32(math.Sqrt(
+		return float64(math.Sqrt(
 			math.Pow(
-				float64(one.GetX()-another.GetX()),
+				float64(one.X()-another.X()),
 				2,
 			) + math.Pow(
-				float64(one.GetY()-another.GetY()),
+				float64(one.Y()-another.Y()),
 				2,
 			),
 		))
@@ -40,11 +40,11 @@ type IntersectedObjects []PhysicalObject
 
 // check whether current physical object intersects with another one
 func Intersect(one, another PhysicalObject) bool {
-	verticalOverlap := math.Abs(float64(one.GetY()-another.GetY())) < float64(one.GetHeight()+another.GetHeight())/2
-	horizontalOverlap := math.Abs(float64(one.GetX()-another.GetX())) < float64(one.GetWidth()+another.GetWidth())/2
-	if one.GetX() == another.GetX() {
+	verticalOverlap := math.Abs(float64(one.Y()-another.Y())) < float64(one.Height()+another.Height())/2
+	horizontalOverlap := math.Abs(float64(one.X()-another.X())) < float64(one.Width()+another.Width())/2
+	if one.X() == another.X() {
 		return verticalOverlap
-	} else if one.GetY() == another.GetY() {
+	} else if one.Y() == another.Y() {
 		return horizontalOverlap
 	} else {
 		return verticalOverlap && horizontalOverlap
@@ -52,15 +52,15 @@ func Intersect(one, another PhysicalObject) bool {
 }
 
 type Bounds struct {
-	X, Y, Width, Height float32
+	X, Y, Width, Height float64
 }
 
 // whether the physical object resides completely within bounding area of current tree, border overlaps are allowed
 func (b *Bounds) Contains(obj PhysicalObject) bool {
-	return obj.GetX() >= b.X &&
-		obj.GetY() >= b.Y &&
-		obj.GetX()+obj.GetWidth() <= b.X+b.Width &&
-		obj.GetY()+obj.GetHeight() <= b.Y+b.Height
+	return obj.X() >= b.X &&
+		obj.Y() >= b.Y &&
+		obj.X()+obj.Width() <= b.X+b.Width &&
+		obj.Y()+obj.Height() <= b.Y+b.Height
 }
 
 // Quadtree - The quadtree data structure
@@ -110,10 +110,10 @@ func (qt *Quadtree) Build() {
 	for ele := qt.m_Objects.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(PhysicalObject)
 
-		topPart := (obj.GetY() >= qt.Y) && (obj.GetY()+obj.GetHeight() <= verticalMidpoint)
-		bottomPart := (obj.GetY() >= verticalMidpoint) && (obj.GetY()+obj.GetHeight() <= qt.Height)
-		leftPart := (obj.GetX() >= qt.X) && (obj.GetX()+obj.GetWidth() <= horizontalMidpoint)
-		rightPart := (obj.GetX() >= horizontalMidpoint) && (obj.GetX()+obj.GetWidth() <= qt.Width)
+		topPart := (obj.Y() >= qt.Y) && (obj.Y()+obj.Height() <= verticalMidpoint)
+		bottomPart := (obj.Y() >= verticalMidpoint) && (obj.Y()+obj.Height() <= qt.Height)
+		leftPart := (obj.X() >= qt.X) && (obj.X()+obj.Width() <= horizontalMidpoint)
+		rightPart := (obj.X() >= horizontalMidpoint) && (obj.X()+obj.Width() <= qt.Width)
 
 		index := -1
 		// obj can completely fit within the left quadrants
@@ -185,9 +185,9 @@ func (qt *Quadtree) Update(delta time.Duration) {
 	var movedObjects []*list.Element
 	for ele := qt.m_Objects.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(PhysicalObject)
-		// Logger.Info("updating object previously located at", zap.Float32("X", obj.GetX()), zap.Float32("Y", obj.GetY()))
+		// Logger.Info("updating object previously located at", zap.Float64("X", obj.X()), zap.Float64("Y", obj.Y()))
 		if obj.Update(delta) {
-			// Logger.Info("object moved to", zap.Float32("X", obj.GetX()), zap.Float32("Y", obj.GetY()))
+			// Logger.Info("object moved to", zap.Float64("X", obj.X()), zap.Float64("Y", obj.Y()))
 			movedObjects = append(movedObjects, ele)
 		}
 	}
@@ -218,12 +218,12 @@ func (qt *Quadtree) Update(delta time.Duration) {
 		/*
 			Logger.Info(
 				"object about moved to container",
-				zap.Float32("object X", obj.GetX()),
-				zap.Float32("object Y", obj.GetY()),
-				zap.Float32("container X", container.X),
-				zap.Float32("container Y", container.Y),
-				zap.Float32("container width", container.Width),
-				zap.Float32("container height", container.Height),
+				zap.Float64("object X", obj.X()),
+				zap.Float64("object Y", obj.Y()),
+				zap.Float64("container X", container.X),
+				zap.Float64("container Y", container.Y),
+				zap.Float64("container width", container.Width),
+				zap.Float64("container height", container.Height),
 			)
 		*/
 		container.Insert(obj)
@@ -249,14 +249,14 @@ func (qt *Quadtree) Insert(physical PhysicalObject) {
 	/*
 		Logger.Info(
 			"inserting physical object",
-			zap.Float32("object X", physical.GetX()),
-			zap.Float32("object Y", physical.GetY()),
-			zap.Float32("object Width", physical.GetWidth()),
-			zap.Float32("object Height", physical.GetHeight()),
-			zap.Float32("tree X", qt.X),
-			zap.Float32("tree Y", qt.Y),
-			zap.Float32("tree Width", qt.Width),
-			zap.Float32("tree Height", qt.Height),
+			zap.Float64("object X", physical.X()),
+			zap.Float64("object Y", physical.Y()),
+			zap.Float64("object Width", physical.Width()),
+			zap.Float64("object Height", physical.Height()),
+			zap.Float64("tree X", qt.X),
+			zap.Float64("tree Y", qt.Y),
+			zap.Float64("tree Width", qt.Width),
+			zap.Float64("tree Height", qt.Height),
 		)
 	*/
 	if qt.m_ActiveNodes == 0 {
@@ -275,10 +275,10 @@ func (qt *Quadtree) Insert(physical PhysicalObject) {
 	horizontalMidpoint := qt.X + (qt.Width / 2)
 	verticalMidpoint := qt.Y + (qt.Height / 2)
 
-	topPart := (physical.GetY() >= qt.Y) && (physical.GetY()+physical.GetHeight() <= verticalMidpoint)
-	bottomPart := (physical.GetY() >= verticalMidpoint) && (physical.GetY()+physical.GetHeight() <= qt.Height)
-	leftPart := (physical.GetX() >= qt.X) && (physical.GetX()+physical.GetWidth() <= horizontalMidpoint)
-	rightPart := (physical.GetX() >= horizontalMidpoint) && (physical.GetX()+physical.GetWidth() <= qt.Width)
+	topPart := (physical.Y() >= qt.Y) && (physical.Y()+physical.Height() <= verticalMidpoint)
+	bottomPart := (physical.Y() >= verticalMidpoint) && (physical.Y()+physical.Height() <= qt.Height)
+	leftPart := (physical.X() >= qt.X) && (physical.X()+physical.Width() <= horizontalMidpoint)
+	rightPart := (physical.X() >= horizontalMidpoint) && (physical.X()+physical.Width() <= qt.Width)
 
 	index := -1
 	//pRect can completely fit within the left quadrants

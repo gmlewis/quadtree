@@ -9,23 +9,23 @@ import (
 )
 
 type TestPhysicalObject struct {
-	X, Y, Width, Height float32
+	x, y, width, height float64
 }
 
-func (po *TestPhysicalObject) GetX() float32 {
-	return po.X
+func (po *TestPhysicalObject) X() float64 {
+	return po.x
 }
 
-func (po *TestPhysicalObject) GetY() float32 {
-	return po.Y
+func (po *TestPhysicalObject) Y() float64 {
+	return po.y
 }
 
-func (po *TestPhysicalObject) GetWidth() float32 {
-	return po.Width
+func (po *TestPhysicalObject) Width() float64 {
+	return po.width
 }
 
-func (po *TestPhysicalObject) GetHeight() float32 {
-	return po.Height
+func (po *TestPhysicalObject) Height() float64 {
+	return po.height
 }
 
 func (po *TestPhysicalObject) Update(delta time.Duration) bool {
@@ -34,14 +34,14 @@ func (po *TestPhysicalObject) Update(delta time.Duration) bool {
 
 // TestSetup defined data to create a Quadtree
 type TestSetup struct {
-	X, Y, Width, Height   float32
+	X, Y, Width, Height   float64
 	MaxObjects, MaxLevels int
-	PhysicalObjects       []float32 // groups of (X, Y, Width, Height)
+	PhysicalObjects       []float64 // groups of (X, Y, Width, Height)
 }
 
 // QuadtreeState defines the expected state of a Quadtree
 type QuadtreeState struct {
-	PhysicalObjects []float32         // groupds of (X, Y, Width, Height), representing objects in the root node
+	PhysicalObjects []float64         // groupds of (X, Y, Width, Height), representing objects in the root node
 	SubTrees        [4]*QuadtreeState // nil element to identify that no such subtree should be created
 }
 
@@ -121,7 +121,7 @@ func (qt *Quadtree) DumpState() *QuadtreeState {
 	state := &QuadtreeState{}
 	for ele := qt.m_Objects.Front(); ele != nil; ele = ele.Next() {
 		obj := ele.Value.(PhysicalObject)
-		state.PhysicalObjects = append(state.PhysicalObjects, obj.GetX(), obj.GetY(), obj.GetWidth(), obj.GetHeight())
+		state.PhysicalObjects = append(state.PhysicalObjects, obj.X(), obj.Y(), obj.Width(), obj.Height())
 	}
 
 	flags := qt.m_ActiveNodes
@@ -140,10 +140,10 @@ func (qt *Quadtree) DumpState() *QuadtreeState {
 type QuadtreeIntersections []PhysicalObject
 
 func SameAs(obj PhysicalObject, another PhysicalObject) bool {
-	return obj.GetX() == another.GetX() &&
-		obj.GetY() == another.GetY() &&
-		obj.GetWidth() == another.GetWidth() &&
-		obj.GetHeight() == another.GetHeight()
+	return obj.X() == another.X() &&
+		obj.Y() == another.Y() &&
+		obj.Width() == another.Width() &&
+		obj.Height() == another.Height()
 }
 
 func (qt *Quadtree) DumpIntersections() QuadtreeIntersections {
@@ -192,8 +192,8 @@ func (inter QuadtreeIntersections) String() string {
 		buf.WriteString(
 			fmt.Sprintf(
 				"(%-10.2f%-10.2f%-10.2f%-10.2f) (%-10.2f%-10.2f%-10.2f%-10.2f)\n",
-				one.GetX(), one.GetY(), one.GetWidth(), one.GetHeight(),
-				another.GetX(), another.GetY(), another.GetWidth(), another.GetHeight(),
+				one.X(), one.Y(), one.Width(), one.Height(),
+				another.X(), another.Y(), another.Width(), another.Height(),
 			),
 		)
 	}
@@ -209,7 +209,7 @@ func (inter IntersectedObjects) SameAs(another IntersectedObjects) bool {
 	for _, one := range inter {
 		found := false
 		for k, two := range another {
-			if !usedIndex[k] && one.GetX() == two.GetX() && one.GetY() == two.GetY() && one.GetWidth() == two.GetWidth() && one.GetHeight() == two.GetHeight() {
+			if !usedIndex[k] && one.X() == two.X() && one.Y() == two.Y() && one.Width() == two.Width() && one.Height() == two.Height() {
 				found = true
 				usedIndex[k] = true
 				break
@@ -228,7 +228,7 @@ func (inter IntersectedObjects) String() string {
 		buf.WriteString(
 			fmt.Sprintf(
 				"%-10.2f%-10.2f%-10.2f%-10.2f",
-				obj.GetX(), obj.GetY(), obj.GetWidth(), obj.GetHeight(),
+				obj.X(), obj.Y(), obj.Width(), obj.Height(),
 			),
 		)
 	}
@@ -260,14 +260,14 @@ func OP_Build(qt *Quadtree, _ []PhysicalObject) []interface{} {
 	return []interface{}{qt}
 }
 
-func OP_Insert(parts ...float32) OperationFunc {
+func OP_Insert(parts ...float64) OperationFunc {
 	return func(qt *Quadtree, _ []PhysicalObject) []interface{} {
 		for i := 0; i < len(parts); i += 4 {
 			qt.Insert(&TestPhysicalObject{
-				X:      parts[i],
-				Y:      parts[i+1],
-				Width:  parts[i+2],
-				Height: parts[i+3],
+				x:      parts[i],
+				y:      parts[i+1],
+				width:  parts[i+2],
+				height: parts[i+3],
 			})
 		}
 		return []interface{}{qt}
@@ -281,11 +281,11 @@ func OP_Remove(index int) OperationFunc {
 	}
 }
 
-func OP_UpdateObject(index int, x, y float32, updateTimes int) OperationFunc {
+func OP_UpdateObject(index int, x, y float64, updateTimes int) OperationFunc {
 	return func(qt *Quadtree, objects []PhysicalObject) []interface{} {
 		obj := objects[index].(*TestPhysicalObject)
-		obj.X = x
-		obj.Y = y
+		obj.x = x
+		obj.y = y
 
 		for i := 0; i < updateTimes; i += 1 {
 			qt.Update(0 * time.Second)
@@ -374,7 +374,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				1, 10,
-				[]float32{
+				[]float64{
 					0.5, 0.5, 1, 1,
 					0, 0, 1, 1,
 				},
@@ -384,10 +384,10 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{0.5, 0.5, 1, 1},
+							[]float64{0.5, 0.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{0, 0, 1, 1},
+									[]float64{0, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 							},
@@ -398,7 +398,7 @@ var (
 					Operation: OP_Remove(1),
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{0.5, 0.5, 1, 1},
+							[]float64{0.5, 0.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{},
 							},
@@ -411,7 +411,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				1, 10,
-				[]float32{
+				[]float64{
 					0.5, 0.5, 1, 1,
 					0, 0, 1, 1,
 				},
@@ -421,10 +421,10 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{0.5, 0.5, 1, 1},
+							[]float64{0.5, 0.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{0, 0, 1, 1},
+									[]float64{0, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 							},
@@ -435,10 +435,10 @@ var (
 					Operation: OP_Remove(0),
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{0, 0, 1, 1},
+									[]float64{0, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 							},
@@ -451,7 +451,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1, 1, 1,
 					0, 0, 1, 1,
 					1, 0, 1, 1,
@@ -478,7 +478,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1, 1, 1,
 					0, 0, 1, 1,
 					1, 0, 1, 1,
@@ -505,7 +505,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1, 1, 2, 2,
 					0.5, 0.5, 1, 1,
 					0, 1, 1, 1,
@@ -533,7 +533,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1,
 					1, 0, 1, 1,
 					0, 1, 1, 1,
@@ -548,7 +548,7 @@ var (
 				&TestOperation{
 					Operation: OP_FindObject(3),
 					Expectation: []ExpectationFunc{EX_CheckState(&QuadtreeState{
-						[]float32{1, 1, 1, 1},
+						[]float64{1, 1, 1, 1},
 						[4]*QuadtreeState{},
 					})},
 				},
@@ -558,7 +558,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					0.5, 0.5, 1, 1,
 					0, 0, 1, 1,
 					1, 0, 1, 1,
@@ -574,22 +574,22 @@ var (
 				&TestOperation{
 					Operation: OP_FindObject(0),
 					Expectation: []ExpectationFunc{EX_CheckState(&QuadtreeState{
-						[]float32{0.5, 0.5, 1, 1},
+						[]float64{0.5, 0.5, 1, 1},
 						[4]*QuadtreeState{
 							&QuadtreeState{
-								[]float32{0, 0, 1, 1},
+								[]float64{0, 0, 1, 1},
 								[4]*QuadtreeState{},
 							},
 							&QuadtreeState{
-								[]float32{1, 0, 1, 1},
+								[]float64{1, 0, 1, 1},
 								[4]*QuadtreeState{},
 							},
 							&QuadtreeState{
-								[]float32{0, 1, 1, 1},
+								[]float64{0, 1, 1, 1},
 								[4]*QuadtreeState{},
 							},
 							&QuadtreeState{
-								[]float32{1, 1, 1, 1},
+								[]float64{1, 1, 1, 1},
 								[4]*QuadtreeState{},
 							},
 						},
@@ -601,7 +601,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				1, 1,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1, // top-left subnode
 					1, 0, 1, 1, // top-right subnode
 					0, 1, 1, 1, // bottom-left subnode
@@ -612,11 +612,11 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0, 0, 1, 1}, [4]*QuadtreeState{}}, // top-left subnode
-								&QuadtreeState{[]float32{1, 0, 1, 1}, [4]*QuadtreeState{}}, // top-right subnode
-								&QuadtreeState{[]float32{0, 1, 1, 1}, [4]*QuadtreeState{}}, // bottom-left subnode
+								&QuadtreeState{[]float64{0, 0, 1, 1}, [4]*QuadtreeState{}}, // top-left subnode
+								&QuadtreeState{[]float64{1, 0, 1, 1}, [4]*QuadtreeState{}}, // top-right subnode
+								&QuadtreeState{[]float64{0, 1, 1, 1}, [4]*QuadtreeState{}}, // bottom-left subnode
 								nil, // no bottom-right subnode
 							},
 						},
@@ -628,7 +628,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 2,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
 					1, 0, 1, 1,
@@ -640,14 +640,14 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{1.5, 1.5, 1, 1},
+							[]float64{1.5, 1.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{},
+									[]float64{},
 									[4]*QuadtreeState{
-										&QuadtreeState{[]float32{0, 0, 1, 1}, [4]*QuadtreeState{}},
-										&QuadtreeState{[]float32{1, 0, 1, 1}, [4]*QuadtreeState{}},
-										&QuadtreeState{[]float32{0, 1, 1, 1}, [4]*QuadtreeState{}},
+										&QuadtreeState{[]float64{0, 0, 1, 1}, [4]*QuadtreeState{}},
+										&QuadtreeState{[]float64{1, 0, 1, 1}, [4]*QuadtreeState{}},
+										&QuadtreeState{[]float64{0, 1, 1, 1}, [4]*QuadtreeState{}},
 										nil,
 									},
 								}, // top-left subnode
@@ -664,7 +664,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 1,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
 					1, 0, 1, 1,
@@ -676,12 +676,12 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								1.5, 1.5, 1, 1,
 							},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{
+									[]float64{
 										0, 0, 1, 1,
 										1, 0, 1, 1,
 										0, 1, 1, 1,
@@ -701,7 +701,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				4, 1,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1, // top-left subnode
 					1, 0, 1, 1, // top-right subnode
 					0, 1, 1, 1, // bottom-left subnode
@@ -713,7 +713,7 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								0, 0, 1, 1,
 								1, 0, 1, 1,
 								0, 1, 1, 1,
@@ -729,7 +729,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				3, 1,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1,
 					1, 0, 1, 1,
 					0, 1, 1, 1,
@@ -741,12 +741,12 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0, 0, 1, 1}, [4]*QuadtreeState{}},
-								&QuadtreeState{[]float32{1, 0, 1, 1}, [4]*QuadtreeState{}},
-								&QuadtreeState{[]float32{0, 1, 1, 1}, [4]*QuadtreeState{}},
-								&QuadtreeState{[]float32{1, 1, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0, 0, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{1, 0, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0, 1, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{1, 1, 1, 1}, [4]*QuadtreeState{}},
 							},
 						},
 					)},
@@ -757,7 +757,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 8, 8,
 				1, 5,
-				[]float32{
+				[]float64{
 					3.5, 3.5, 1, 1,
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
@@ -770,24 +770,24 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{3.5, 3.5, 1, 1},
+							[]float64{3.5, 3.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{1.5, 1.5, 1, 1},
+									[]float64{1.5, 1.5, 1, 1},
 									[4]*QuadtreeState{
 										&QuadtreeState{
-											[]float32{},
+											[]float64{},
 											[4]*QuadtreeState{
 												&QuadtreeState{
-													[]float32{0, 0, 1, 1},
+													[]float64{0, 0, 1, 1},
 													[4]*QuadtreeState{},
 												},
 												&QuadtreeState{
-													[]float32{1, 0, 1, 1},
+													[]float64{1, 0, 1, 1},
 													[4]*QuadtreeState{},
 												},
 												&QuadtreeState{
-													[]float32{0, 1, 1, 1},
+													[]float64{0, 1, 1, 1},
 													[4]*QuadtreeState{},
 												},
 											},
@@ -804,7 +804,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0.5, 0.5, 1, 1,
 				},
@@ -814,9 +814,9 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{1.5, 1.5, 1, 1},
+							[]float64{1.5, 1.5, 1, 1},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0.5, 0.5, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0.5, 0.5, 1, 1}, [4]*QuadtreeState{}},
 							},
 						},
 					)},
@@ -827,12 +827,12 @@ var (
 					),
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								1.5, 1.5, 1, 1,
 								3, 1.5, 1, 1,
 							},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0.5, 0.5, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0.5, 0.5, 1, 1}, [4]*QuadtreeState{}},
 							},
 						},
 					)},
@@ -843,7 +843,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
 				},
@@ -853,9 +853,9 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{1.5, 1.5, 1, 1},
+							[]float64{1.5, 1.5, 1, 1},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0, 0, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0, 0, 1, 1}, [4]*QuadtreeState{}},
 							},
 						},
 					)},
@@ -866,18 +866,18 @@ var (
 					),
 					Expectation: []ExpectationFunc{EX_CheckState(
 						&QuadtreeState{
-							[]float32{1.5, 1.5, 1, 1},
+							[]float64{1.5, 1.5, 1, 1},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{},
+									[]float64{},
 									[4]*QuadtreeState{
 										&QuadtreeState{
-											[]float32{0, 0, 1, 1},
+											[]float64{0, 0, 1, 1},
 											[4]*QuadtreeState{},
 										},
 										nil,
 										&QuadtreeState{
-											[]float32{0, 1, 1, 1},
+											[]float64{0, 1, 1, 1},
 											[4]*QuadtreeState{},
 										},
 										nil,
@@ -893,7 +893,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0.5, 1, 1,
 				},
@@ -903,9 +903,9 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{1.5, 1.5, 1, 1},
+							[]float64{1.5, 1.5, 1, 1},
 							[4]*QuadtreeState{
-								&QuadtreeState{[]float32{0, 0.5, 1, 1}, [4]*QuadtreeState{}},
+								&QuadtreeState{[]float64{0, 0.5, 1, 1}, [4]*QuadtreeState{}},
 							},
 						},
 						nil,
@@ -917,12 +917,12 @@ var (
 					),
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								1.5, 1.5, 1, 1,
 							},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{
+									[]float64{
 										0, 0.5, 1, 1,
 										1, 0.5, 1, 1,
 									},
@@ -939,7 +939,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				4, 1,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1,
 					1, 0, 1, 1,
 					0, 1, 1, 1,
@@ -951,7 +951,7 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								0, 0, 1, 1,
 								1, 0, 1, 1,
 								0, 1, 1, 1,
@@ -968,7 +968,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				1, 1,
-				[]float32{
+				[]float64{
 					0.5, 0.5, 1, 1,
 					0, 0, 1, 1,
 					1, 1, 1, 1,
@@ -979,12 +979,12 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								0.5, 0.5, 1, 1,
 							},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{
+									[]float64{
 										0, 0, 1, 1,
 									},
 									[4]*QuadtreeState{},
@@ -992,7 +992,7 @@ var (
 								nil,
 								nil,
 								&QuadtreeState{
-									[]float32{
+									[]float64{
 										1, 1, 1, 1,
 									},
 									[4]*QuadtreeState{},
@@ -1013,7 +1013,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				4, 1,
-				[]float32{
+				[]float64{
 					0.5, 0.5, 1, 1,
 					0, 0, 1, 1,
 					1, 1, 1, 1,
@@ -1024,7 +1024,7 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								0.5, 0.5, 1, 1,
 								0, 0, 1, 1,
 								1, 1, 1, 1,
@@ -1045,7 +1045,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
 					1, 1, 1, 1,
@@ -1056,15 +1056,15 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								1.5, 1.5, 1, 1,
 							},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{},
+									[]float64{},
 									[4]*QuadtreeState{
 										&QuadtreeState{
-											[]float32{
+											[]float64{
 												0, 0, 1, 1,
 											},
 											[4]*QuadtreeState{},
@@ -1072,7 +1072,7 @@ var (
 										nil,
 										nil,
 										&QuadtreeState{
-											[]float32{
+											[]float64{
 												1, 1, 1, 1,
 											},
 											[4]*QuadtreeState{},
@@ -1096,7 +1096,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 4, 4,
 				1, 10,
-				[]float32{
+				[]float64{
 					1.5, 1.5, 1, 1,
 					0, 0, 1, 1,
 					0, 0, 1, 1,
@@ -1109,17 +1109,17 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{
+							[]float64{
 								1.5, 1.5, 1, 1,
 							},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{
+									[]float64{
 										0.5, 0, 1, 1,
 									},
 									[4]*QuadtreeState{
 										&QuadtreeState{
-											[]float32{
+											[]float64{
 												0, 0, 1, 1,
 												0, 0, 1, 1,
 											},
@@ -1128,7 +1128,7 @@ var (
 										nil,
 										nil,
 										&QuadtreeState{
-											[]float32{1, 1, 1, 1},
+											[]float64{1, 1, 1, 1},
 											[4]*QuadtreeState{},
 										},
 									},
@@ -1162,7 +1162,7 @@ var (
 			Setup: &TestSetup{
 				0, 0, 2, 2,
 				1, 10,
-				[]float32{
+				[]float64{
 					0, 0, 1, 1,
 					1, 0, 1, 1,
 				},
@@ -1172,14 +1172,14 @@ var (
 					Operation: OP_Build,
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
 								&QuadtreeState{
-									[]float32{0, 0, 1, 1},
+									[]float64{0, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								&QuadtreeState{
-									[]float32{1, 0, 1, 1},
+									[]float64{1, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								nil,
@@ -1194,15 +1194,15 @@ var (
 					Operation: OP_UpdateObject(0, 0, 1, 1),
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
 								&QuadtreeState{}, // 旧的节点保留，但是没有物理对象
 								&QuadtreeState{
-									[]float32{1, 0, 1, 1},
+									[]float64{1, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								&QuadtreeState{
-									[]float32{0, 1, 1, 1},
+									[]float64{0, 1, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								nil,
@@ -1216,15 +1216,15 @@ var (
 					Operation: OP_UpdateObject(0, 0, 1, 63),
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
 								&QuadtreeState{}, // 旧的节点保留，但是没有物理对象
 								&QuadtreeState{
-									[]float32{1, 0, 1, 1},
+									[]float64{1, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								&QuadtreeState{
-									[]float32{0, 1, 1, 1},
+									[]float64{0, 1, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								nil,
@@ -1238,15 +1238,15 @@ var (
 					Operation: OP_UpdateObject(0, 0, 1, 1),
 					Expectation: []ExpectationFunc{EX_CheckStateAndIntersections(&TestExpectation{
 						&QuadtreeState{
-							[]float32{},
+							[]float64{},
 							[4]*QuadtreeState{
 								nil,
 								&QuadtreeState{
-									[]float32{1, 0, 1, 1},
+									[]float64{1, 0, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								&QuadtreeState{
-									[]float32{0, 1, 1, 1},
+									[]float64{0, 1, 1, 1},
 									[4]*QuadtreeState{},
 								},
 								nil,
@@ -1266,10 +1266,10 @@ func TestAll(t *testing.T) {
 		var objects []PhysicalObject
 		for i := 0; i < len(testCase.Setup.PhysicalObjects); i += 4 {
 			objects = append(objects, &TestPhysicalObject{
-				X:      testCase.Setup.PhysicalObjects[i],
-				Y:      testCase.Setup.PhysicalObjects[i+1],
-				Width:  testCase.Setup.PhysicalObjects[i+2],
-				Height: testCase.Setup.PhysicalObjects[i+3],
+				x:      testCase.Setup.PhysicalObjects[i],
+				y:      testCase.Setup.PhysicalObjects[i+1],
+				width:  testCase.Setup.PhysicalObjects[i+2],
+				height: testCase.Setup.PhysicalObjects[i+3],
 			})
 		}
 		qt := CreateQuadtree(
